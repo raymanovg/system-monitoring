@@ -24,6 +24,5 @@ func GetAvg() (stat *AvgStat, err error) {
 		Load5:  float64(load.load[1]) / scale,
 		Load15: float64(load.load[2]) / scale,
 	}
-
 	return stat, nil
 }

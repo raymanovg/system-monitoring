@@ -4,13 +4,15 @@ package cpu
 
 import (
 	"errors"
-	"github.com/raymanovg/system-monitoring/internal/helper"
 	"strconv"
 	"strings"
+
+	"github.com/raymanovg/system-monitoring/internal/common"
 )
 
 func GetCpu() (*Stat, error) {
-	lines, _ := helper.ReadLinesOffsetN("/proc/stat", 0, 1)
+	filename := common.HostProc("stat")
+	lines, _ := common.ReadLinesOffsetN(filename, 0, 1)
 
 	cpuStatLine := lines[0]
 	fields := strings.Fields(cpuStatLine)

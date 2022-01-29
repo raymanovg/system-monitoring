@@ -1,9 +1,13 @@
+//go:build linux
+
 package disk
 
 import (
-	"bytes"
+	"errors"
 	"os/exec"
 	"strconv"
+
+	"github.com/raymanovg/system-monitoring/internal/common"
 )
 
 func GetDiscStat() ([]DiscStat, error) {
@@ -44,7 +48,6 @@ func GeInodeStat() ([]INodesStat, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	stats := make([]INodesStat, 0, len(res))
 	for _, s := range res {
 		ins := INodesStat{}
@@ -72,33 +75,59 @@ func GeInodeStat() ([]INodesStat, error) {
 	return stats, nil
 }
 
+func GetLoad() (stats []LoadStat, err error) {
+	res, err := iostat("-d", "-k")
+	if err != nil {
+		return nil, err
+	}
+
+	stats = make([]LoadStat, 0, len(res))
+	for _, s := range res {
+		ls := LoadStat{}
+		for name, val := range s {
+			switch name {
+			case "Device":
+				ls.Name = val
+			case "kB_read/s":
+				ls.Load, err = strconv.ParseFloat(val, 64)
+				if err != nil {
+					return nil, err
+				}
+			case "tps":
+				ls.Tps, err = strconv.ParseFloat(val, 64)
+				if err != nil {
+					return nil, err
+				}
+			}
+		}
+		stats = append(stats, ls)
+	}
+
+	return stats, nil
+}
+
+func iostat(args ...string) ([]map[string]string, error) {
+	cmd := exec.Command("iostat", args...)
+	buf, err := cmd.Output()
+	if err != nil {
+		return nil, err
+	}
+	res := common.ParseCmdOutput(buf, 1, -1)
+	if len(res) == 0 {
+		return nil, errors.New("failed to parse output")
+	}
+	return res, nil
+}
+
 func df(args ...string) ([]map[string]string, error) {
 	cmd := exec.Command("df", args...)
 	buf, err := cmd.Output()
 	if err != nil {
 		return nil, err
 	}
-
-	names := make([]string, 0)
-	lines := bytes.Split(buf, []byte("\n"))
-	res := make([]map[string]string, 0)
-	for i, line := range lines {
-		fields := bytes.Fields(line)
-		if len(fields) == 0 {
-			continue
-		}
-		if i == 0 {
-			for _, n := range fields {
-				names = append(names, string(n))
-			}
-			continue
-		}
-		stats := make(map[string]string)
-		for nameKey, val := range fields {
-			stats[names[nameKey]] = string(val)
-		}
-		res = append(res, stats)
+	res := common.ParseCmdOutput(buf, -1, -1)
+	if len(res) == 0 {
+		return nil, errors.New("failed to parse output")
 	}
-
 	return res, nil
 }

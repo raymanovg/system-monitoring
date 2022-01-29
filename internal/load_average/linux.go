@@ -3,9 +3,10 @@
 package load_average
 
 import (
-	"github.com/raymanovg/system-monitoring/internal/helper"
 	"strconv"
 	"strings"
+
+	"github.com/raymanovg/system-monitoring/internal/common"
 )
 
 func GetAvg() (*AvgStat, error) {
@@ -34,7 +35,8 @@ func GetAvg() (*AvgStat, error) {
 }
 
 func readLoadAvgFromFile() ([]string, error) {
-	lines, err := helper.ReadLinesOffsetN("/proc/loadavg", 0, 1)
+	filename := common.HostProc("loadavg")
+	lines, err := common.ReadLinesOffsetN(filename, 0, 1)
 	if err != nil {
 		return nil, err
 	}

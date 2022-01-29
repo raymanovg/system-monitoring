@@ -11,3 +11,9 @@ type INodesStat struct {
 	Usage     uint64
 	Available uint64
 }
+
+type LoadStat struct {
+	Name string
+	Tps  float64
+	Load float64
+}
